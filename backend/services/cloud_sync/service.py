@@ -209,7 +209,10 @@ class CloudSyncService:
             except Exception:  # noqa: BLE001 — one bad round must not end sync for good
                 failures += 1
                 logger.exception("cloud sync round failed")
-                await asyncio.sleep(min(60.0, 2.0 ** failures))
+                try:
+                    await asyncio.wait_for(self._wake.wait(), timeout=min(60.0, 2.0 ** failures))
+                except asyncio.TimeoutError:
+                    pass
                 continue
             if self.engine is None or self.engine.status.stopped:
                 return
